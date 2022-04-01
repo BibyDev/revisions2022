@@ -1,0 +1,63 @@
+data("iris")
+summary(iris)
+
+#creation d'une matrice solo
+CA <- c(110.5, 200)
+EBITDA <- c(70, 90)
+RN <- c(12, 15)
+
+CR <- c(CA, EBITDA, RN)
+
+
+Matrice_CR <- matrix(CR, nrow= 3, byrow= TRUE)
+Matrice_CR
+
+Titre_ligne <- c("CA", "EBITDA","RN")
+Titre_col <- c("Ent1", "Ent2")
+
+colnames(Matrice_CR) <- Titre_col
+rownames(Matrice_CR) <- Titre_ligne
+Matrice_CR
+
+#Autre version 
+
+box_office <- c(460.998, 314.4, 290.475, 247.900, 309.306, 165.8)
+star_wars_matrix <- matrix(box_office, nrow = 3, byrow = TRUE,
+                           dimnames = list(c("A New Hope", "The Empire Strikes Back", "Return of the Jedi"), 
+                                           c("US", "non-US")))
+
+
+#importer des données xl ou csv 
+
+install.packages("openxlsx")
+library(openxlsx)
+
+install.packages("open.csv")
+library(opencsv)
+
+#Exemples d'instalation 
+
+loan_data<-read.csv(file= 'toto.csv', sep = ",", header = TRUE)
+loan_data
+View(loan_data)
+
+database <- read.csv("database.csv")
+View(database)
+
+
+mtcars <-read.xlsx("mtcars.xlsx")
+mtcars
+View(mtcars)
+
+#regarder la structure des donées
+
+str(loan_data)
+str(loan_data)
+str(mtcars)
+
+
+#traçage de camambert sans installation
+
+pie(table(loan_data$home_ownership))
+#pie(table(loan_data$grade))
+
