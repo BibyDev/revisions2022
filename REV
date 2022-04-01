@@ -26,6 +26,7 @@ star_wars_matrix <- matrix(box_office, nrow = 3, byrow = TRUE,
                            dimnames = list(c("A New Hope", "The Empire Strikes Back", "Return of the Jedi"), 
                                            c("US", "non-US")))
 
+
 #importer des données xl ou csv 
 
 install.packages("openxlsx")
@@ -54,6 +55,12 @@ str(loan_data)
 str(loan_data)
 str(mtcars)
 
+#possible pour voir la distrib d'une donée d'utiliser table
+table(loan_data$home_ownership)
+
+#grand resumé
+summary(loan_data)
+
 #traçage de camambert sans installation
 
 pie(table(loan_data$home_ownership))
@@ -72,6 +79,119 @@ View(mtcars2)
 mcor <- cor(mtcars2)
 mcor
 
-#traçage du graphique des corrélations
 corrplot(mcor)
 corrplot(mcor, type="upper", order="hclust", tl.col="black", tl.srt=45)
+
+# Scatterplot
+pairs(mtcars2[1:4])
+
+#graphique en gmodels
+
+install.packages("gmodels")
+
+# Load the gmodels package 
+library(gmodels)
+
+
+#Call CrossTable() on loan_status (voir cmb sont en défaut et combien ne le sont pas)
+CrossTable(loan_data$loan_status)
+
+# Call CrossTable() on grade and loan_status (en double)
+CrossTable(loan_data$grade, loan_data$loan_status, prop.r = TRUE, 
+           prop.c = FALSE, prop.t = FALSE, prop.chisq = FALSE)
+
+
+#faire un histogramme avec en x : le nombre total de la base et en abcisse le montant du prêt
+
+hist_1 <- hist(loan_data$loan_amnt, main="graph", col = "navyblue")
+
+# Changement de style :
+hist_2 <- hist(loan_data$loan_amnt, breaks = 10, xlab = "Loan amount", 
+               main = "Histogram of the loan amount", col = "navyblue")
+
+# Voir une variable sur un graphe
+plot(loan_data$age, ylab = "Age")
+
+#Voir sa boîte à moustache
+boxplot(loan_data$age)
+
+#manipulation de ggplot2
+
+
+install.packages("ggplot2")
+library(ggplot2)
+
+#ex1
+#boîte à moustache stylisee avec comme arg : BBD, aes(x,y, fill=x)
+
+ggplot(loan_data, aes(grade, age, fill=grade)) + 
+  geom_boxplot()+
+  scale_y_continuous("age")+
+  labs(title = "age by grade", x = "grade")
+
+#Ex2
+#autre exemple
+ggplot(loan_data, aes(home_ownership, loan_amnt, fill=home_ownership)) + 
+  geom_boxplot()+
+  scale_y_continuous("loan_amnt")+
+  labs(title = "loan_amnt by home_ownership", x = "home_ownership")
+
+#Ex3
+ggplot(iris, aes(Species, Petal.Length, fill=Species)) + 
+  geom_boxplot()+
+  scale_y_continuous("Petal Length (cm)", breaks= seq(0,30, by=.5))+
+  labs(title = "Iris Petal Length Box Plot", x = "Species")
+
+#Valeurs aberrantes et retraitements
+
+# creation d'un indexe qui enregistre toutes les personnés anormalement agées
+index_highage <- which(loan_data$age > 122)
+
+# supression dans uune base clean
+new_data <- loan_data[-index_highage, ]
+
+# Get indices of missing interest rates: na_index
+na_index <- which(is.na(loan_data$int_rate))
+
+loan_data1=loan_data[na_index,]
+View(loan_data1)
+
+##fin du code (NE& médianes)
+
+# Remove observations with missing interest rates: loan_data_delrow_na
+loan_data_delrow_na <- loan_data[-na_index, ]
+
+# Make copy of loan_data
+loan_data_delcol_na <- loan_data
+
+# Delete interest rate column from loan_data_delcol_na
+loan_data_delcol_na$int_rate <- NULL
+
+
+# 5 - REPLACING MISSING DATA
+
+# Compute the median of int_rate
+median_ir <- median(loan_data$int_rate, na.rm = TRUE)
+
+# Make copy of loan_data
+loan_data_replace <- loan_data
+
+# Replace missing interest rates with median
+loan_data_replace$int_rate[na_index] <- median_ir
+
+# Check if the NAs are gone
+summary(loan_data_replace$int_rate)
+
+
+# 6 - KEEPING MISSING DATA
+
+# Make the necessary replacements in the coarse classification example below 
+loan_data$ir_cat <- rep(NA, length(loan_data$int_rate))
+
+loan_data$ir_cat[which(loan_data$int_rate <= 8)] <- "0-8"
+loan_data$ir_cat[which(loan_data$int_rate > 8 & loan_data$int_rate <= 11)] <- "8-11"
+loan_data$ir_cat[which(loan_data$int_rate > 11 & loan_data$int_rate <= 13.5)] <- "11-13.5"
+loan_data$ir_cat[which(loan_data$int_rate > 13.5)] <- "13.5+"
+loan_data$ir_cat[which(is.na(loan_data$int_rate))] <- "Missing"
+
+loan_data$ir_cat <- as.factor(loan_data$ir_cat)
