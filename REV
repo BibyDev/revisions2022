@@ -72,5 +72,6 @@ View(mtcars2)
 mcor <- cor(mtcars2)
 mcor
 
+#traçage du graphique des corrélations
 corrplot(mcor)
 corrplot(mcor, type="upper", order="hclust", tl.col="black", tl.srt=45)
