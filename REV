@@ -26,7 +26,6 @@ star_wars_matrix <- matrix(box_office, nrow = 3, byrow = TRUE,
                            dimnames = list(c("A New Hope", "The Empire Strikes Back", "Return of the Jedi"), 
                                            c("US", "non-US")))
 
-
 #importer des données xl ou csv 
 
 install.packages("openxlsx")
@@ -55,9 +54,23 @@ str(loan_data)
 str(loan_data)
 str(mtcars)
 
-
 #traçage de camambert sans installation
 
 pie(table(loan_data$home_ownership))
 #pie(table(loan_data$grade))
 
+#installation de packages de plot 
+#version correlations
+
+install.packages("corrplot")
+library(corrplot)
+
+# voir les correlations en enlevant la première colonne qui est qualitative
+mtcars2<-mtcars[ ,-1]
+View(mtcars2)
+
+mcor <- cor(mtcars2)
+mcor
+
+corrplot(mcor)
+corrplot(mcor, type="upper", order="hclust", tl.col="black", tl.srt=45)
