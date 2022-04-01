@@ -195,3 +195,165 @@ loan_data$ir_cat[which(loan_data$int_rate > 13.5)] <- "13.5+"
 loan_data$ir_cat[which(is.na(loan_data$int_rate))] <- "Missing"
 
 loan_data$ir_cat <- as.factor(loan_data$ir_cat)
+
+
+
+
+
+
+
+
+
+Mode
+
+# Look at your new variable using plot()
+plot(loan_data$ir_cat)
+
+
+# 7 - SPLITTING THE DATASET
+
+# Set seed of 567
+set.seed(567)
+
+# Store row numbers for training set: index_train
+index_train <- sample(1:nrow(loan_data), 2 / 3 * nrow(loan_data))
+
+# Create training set: training_set
+training_set <- loan_data[index_train, ]
+
+# Create test set: test_set
+test_set <- loan_data[-index_train, ]
+
+
+# 8 - LOGISTIC REGRESSION WITH ONE VARIABLE
+
+# Build a glm model with variable ir_cat as a predictor
+log_model_cat <- glm(formula = loan_status ~ ir_cat, family = "binomial",
+                     data = training_set)
+
+# Print the parameter estimates 
+log_model_cat
+log_model_cat$coefficients
+
+# Look at the different categories in ir_cat using table()
+table(loan_data$ir_cat)
+
+
+# 8 - LOGISTIC REGRESSION WITH MULTIPLE VARIABLES
+
+# Build the logistic regression model
+log_model_multi <- glm(loan_status ~ age + ir_cat + grade +
+                         annual_inc, family = "binomial", data = training_set)
+
+# Obtain significance levels using summary()
+summary(log_model_multi)
+
+
+# 9 - PREDICTING THE PROBABILITY OF DEFAULT
+
+# Make PD-predictions for all test set elements using the full logistic regression model
+predictions_multi <- predict(log_model_multi, newdata = test_set, type = "response")
+
+
+# Look at the predictions range
+range(predictions_multi)
+
+test_set$predictions=predictions_multi
+View(test_set)
+
+
+# 10 - CREATING A CONFUSION MATRIX
+
+# Make a binary predictions-vector using a cut-off of 15%
+pred_cutoff_15 <- ifelse(predictions_multi > 0.15, 1, 0)
+pred_cutoff_20 <- ifelse(predictions_multi > 0.20, 1, 0)
+
+# Construct a confusion matrix
+table(test_set$loan_status, pred_cutoff_15)
+table(test_set$loan_status, pred_cutoff_20)
+
+
+# 11 - COMPARING LINK FUNCTIONS FOR A GIVEN CUT-OFF
+
+# Fit the logit, probit and cloglog-link logistic regression models
+log_model_logit <- glm(loan_status ~ age + ir_cat + loan_amnt,
+                       family = binomial(link = logit), data = training_set)
+log_model_probit <- glm(loan_status ~ age + ir_cat + loan_amnt,
+                        family =  binomial(link = probit), data = training_set)
+log_model_cloglog <- glm(loan_status ~ age + ir_cat + loan_amnt,
+                         family = binomial(link = cloglog), data = training_set)
+
+# Make predictions for all models using the test set
+predictions_logit <- predict(log_model_logit, newdata = test_set, type = "response")
+predictions_probit <- predict(log_model_probit, newdata = test_set, type = "response")
+predictions_cloglog <- predict(log_model_cloglog, newdata = test_set, type = "response")
+
+# Use a cut-off of 14% to make binary predictions-vectors
+cutoff <- 0.14
+class_pred_logit <- ifelse(predictions_logit > cutoff, 1, 0)
+class_pred_probit <- ifelse(predictions_probit > cutoff, 1, 0)
+class_pred_cloglog <- ifelse(predictions_cloglog  > cutoff, 1, 0)
+
+# Make a confusion matrix for the three models
+tab_class_logit <- table(test_set$loan_status, class_pred_logit)
+tab_class_probit <- table(test_set$loan_status, class_pred_probit)
+tab_class_cloglog <- table(test_set$loan_status, class_pred_cloglog)
+
+# Compute the classification accuracy for all three models
+acc_logit <- sum(diag(tab_class_logit)) / nrow(test_set)
+acc_probit <- sum(diag(tab_class_probit)) / nrow(test_set)
+acc_cloglog <- sum(diag(tab_class_cloglog)) / nrow(test_set)
+
+
+# 12 - DECISION TREE
+
+# set a seed and run the code to obtain a tree using weights, minsplit and minbucket
+install.packages("rpart.plot")
+library(rpart.plot)
+
+set.seed(345)
+tree_weights <- rpart(loan_status ~ age + ir_cat + loan_amnt,
+                      data = training_set,method="poisson",
+                      control = rpart.control(minsplit = 5, minbucket = 2,cp=0.0014))
+
+# Plot the cross-validated error rate for a changing cp
+plotcp(tree_weights)
+rpart.plot(tree_weights)
+
+# Create an index for of the row with the minimum xerror
+index <- which.min(tree_weights$cp[ , "xerror"])
+
+# Create tree_min
+tree_min <- tree_weights$cp[index, "CP"]
+
+#  Prune the tree using tree_min
+ptree_weights <- prune(tree_weights, tree_min)
+
+# Plot the pruned tree using the rpart.plot()-package
+prp(ptree_weights, extra = 1)
+
+
+# 13 - ROC CURVE
+
+# Load the pROC-package
+install.packages("pROC")
+library(pROC)
+
+# Construct the objects containing ROC-information
+ROC_logit <- roc(test_set$loan_status, predictions_logit)
+ROC_probit <- roc(test_set$loan_status, predictions_probit)
+ROC_cloglog <- roc(test_set$loan_status, predictions_cloglog)
+ROC_all_full <- roc(test_set$loan_status, predictions_multi)
+
+# Draw all ROCs on one plot
+plot(ROC_logit)
+lines(ROC_probit, col = "blue")
+lines(ROC_cloglog, col = "red")
+lines(ROC_all_full, col = "green")
+
+# Compute the AUCs
+auc(ROC_logit)
+auc(ROC_probit)
+auc(ROC_cloglog)
+auc(ROC_all_full)
+
